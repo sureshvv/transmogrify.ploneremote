@@ -95,7 +95,7 @@ class RemoteSchemaUpdaterSection(object):
 
             if self.defaultpage_key in item:
                 defaultpage = item[self.defaultpage_key]
-                self.logger.debug("'%s' setting default page (%s)" % (path, defaultpage))
+                self.logger.info("'%s' setting default page (%s)" % (path, defaultpage))
                 fields['DefaultPage'] = (defaultpage, {})
             if '_mimetype' in item:
                 # Without this plone 4.1 doesn't update html correctly
@@ -126,7 +126,7 @@ class RemoteSchemaUpdaterSection(object):
             if self.skip_unmodified and modified and smodified and modified <= smodified:
                 # Let's double check it at least has a size
                 size = float(urllib.urlopen(url + '/getObjSize').read().split()[0])
-                if size > 0:
+                if size > 0 and self.defaultpage_key not in item:
                     self.logger.info('%s skipping (unmodified)' % (path))
                     yield item
                     continue

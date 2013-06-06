@@ -67,7 +67,7 @@ class RemoteConstructorSection(object):
             path = self.removeInvalidChar(path)
             parentpath =  '/'.join(path.split('/')[:-1])
             parenturl = urllib.basejoin(self.target, parentpath.lstrip('/'))
-            parent = xmlrpclib.ServerProxy(parenturl)
+            parent = xmlrpclib.ServerProxy(parenturl, allow_none=True)
 
             subobjects.setdefault(parentpath,[]).append(item)
 
@@ -140,7 +140,40 @@ class RemoteConstructorSection(object):
 
             existingtype = self.checkType(path)
 
-            if existingtype and existingtype != type_ and self.remove(item):
+            if existingtype == 'Folder' and type_ == 'Document':
+                new_folder_url = parenturl + '/' + id
+                new_folder = xmlrpclib.ServerProxy(new_folder_url, allow_none=True)
+                try:
+                    new_folder.invokeFactory(type_, id)
+                except xmlrpclib.Fault:
+                    pass
+                except xmlrpclib.ProtocolError, e:
+                    # 302 means content was created correctly
+                    if e.errcode != 302:
+                        raise
+                new_item = item.copy()
+                new_item['_type'] = 'Folder'
+                new_item['_defaultpage'] = id
+                del new_item['text']
+                yield new_item
+                item['_path'] = item['_path'] + '/' + id
+                item['_orig_path'] = item['_origin'] = item['_path']
+            elif existingtype == 'Document' and type_ == 'Folder':
+                try:
+                    parent.invokeFactory(type_, 'tmptmp')
+                except xmlrpclib.Fault:
+                    pass
+                except xmlrpclib.ProtocolError, e:
+                    # 302 means content was created correctly
+                    if e.errcode != 302:
+                        raise
+                new_folder_url = parenturl + '/tmptmp'
+                new_folder = xmlrpclib.ServerProxy(new_folder_url, allow_none=True)
+                cp_data = parent.manage_cutObjects([id], None)
+                new_folder.manage_pasteObjects(cp_data)
+                parent.manage_renameObject('tmptmp', id)
+                item['_defaultpage'] = id
+            elif existingtype and existingtype != type_ and self.remove(item):
                 self.logger.info("%s already exists. but is %s instead of %s. Deleting"% (path,existingtype, type_) )
                 parent.manage_delObjects([id])
                 existingtype = None
