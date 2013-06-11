@@ -119,17 +119,21 @@ class RemoteSchemaUpdaterSection(object):
             else:
                 modified = None
 
-            smodified = proxy.ModificationDate()
-            #smodified = datetime.datetime.strptime(smodified, "%Y-%m-%dT%H:%M:%S.Z")
-            if type(smodified) == type(''):
-                smodified = DateTime.DateTime(smodified)
-            if self.skip_unmodified and modified and smodified and modified <= smodified:
-                # Let's double check it at least has a size
-                size = float(urllib.urlopen(url + '/getObjSize').read().split()[0])
-                if size > 0 and self.defaultpage_key not in item:
-                    self.logger.info('%s skipping (unmodified)' % (path))
-                    yield item
-                    continue
+            try:
+                smodified = proxy.ModificationDate()
+            except xmlrpclib.Fault, e:
+                self.logger.warning("Failuire while getting mod_date of %s: %s" % (path,  e))
+            else:
+                #smodified = datetime.datetime.strptime(smodified, "%Y-%m-%dT%H:%M:%S.Z")
+                if type(smodified) == type(''):
+                    smodified = DateTime.DateTime(smodified)
+                if self.skip_unmodified and modified and smodified and modified <= smodified:
+                    # Let's double check it at least has a size
+                    size = float(urllib.urlopen(url + '/getObjSize').read().split()[0])
+                    if size > 0 and self.defaultpage_key not in item:
+                        self.logger.info('%s skipping (unmodified)' % (path))
+                        yield item
+                        continue
 
             for key, parts in fields.items():
                 value, arguments = parts

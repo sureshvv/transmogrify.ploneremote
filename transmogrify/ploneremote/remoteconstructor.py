@@ -140,7 +140,7 @@ class RemoteConstructorSection(object):
 
             existingtype = self.checkType(path)
 
-            if existingtype == 'Folder' and type_ == 'Document':
+            if existingtype == 'Folder' and type_ in ['Document', 'Link']:
                 new_folder_url = parenturl + '/' + id
                 new_folder = xmlrpclib.ServerProxy(new_folder_url, allow_none=True)
                 try:
@@ -154,11 +154,12 @@ class RemoteConstructorSection(object):
                 new_item = item.copy()
                 new_item['_type'] = 'Folder'
                 new_item['_defaultpage'] = id
-                del new_item['text']
+                if type_ == 'Document':
+                    del new_item['text']
                 yield new_item
                 item['_path'] = item['_path'] + '/' + id
                 item['_orig_path'] = item['_origin'] = item['_path']
-            elif existingtype == 'Document' and type_ == 'Folder':
+            elif existingtype in ['Link', 'Document'] and type_ == 'Folder':
                 try:
                     parent.invokeFactory(type_, 'tmptmp')
                 except xmlrpclib.Fault:
@@ -216,7 +217,11 @@ class RemoteConstructorSection(object):
             # now try setting position
             position = len(subobjects[parentpath])-1
             self.logger.debug("'%s' setting position=%s"%(path,position))
-            parent.moveObjectToPosition(id, position)
+            try:
+                parent.moveObjectToPosition(id, position)
+            except xmlrpclib.Fault, e:
+                self.logger.warning("Failuire while setting position=%s of %s: %s" % (position, path, e))
+                pass
 
             yield item
 
