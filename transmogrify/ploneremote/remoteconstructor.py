@@ -134,8 +134,14 @@ class RemoteConstructorSection(object):
                 #id = oldid
                 pass
 
+            parent_type = None
             if parentpath:
                 path = '/'.join([parentpath, id])
+                parent_type = self.checkType(parentpath)
+
+            if parent_type == 'Link':
+                pass
+
             item[self.pathkey(*keys)[0]] = path
 
             existingtype = self.checkType(path)
