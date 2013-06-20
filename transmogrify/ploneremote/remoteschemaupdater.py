@@ -129,7 +129,10 @@ class RemoteSchemaUpdaterSection(object):
                     smodified = DateTime.DateTime(smodified)
                 if self.skip_unmodified and modified and smodified and modified <= smodified:
                     # Let's double check it at least has a size
-                    size = float(urllib.urlopen(url + '/getObjSize').read().split()[0])
+                    try:
+                        size = float(urllib.urlopen(url + '/getObjSize').read().split()[0])
+                    except ValueError:
+                        size = 0
                     if size > 0 and self.defaultpage_key not in item:
                         self.logger.info('%s skipping (unmodified)' % (path))
                         yield item
