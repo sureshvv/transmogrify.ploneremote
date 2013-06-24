@@ -206,6 +206,7 @@ class RemoteConstructorSection(object):
                 if not existingtype and self.create(item):
                     self.logger.debug("%s creating as %s" % (path, type_))
                     try:
+                        id = id.replace('%20', ' ')
                         parent.invokeFactory(type_, id)
                     except xmlrpclib.ProtocolError, e:
                         # 302 means content was created correctly
@@ -291,4 +292,4 @@ class RemoteConstructorSection(object):
 
     def removeInvalidChar(self, path):
         """ plone id does not like space during creating. So remove it. """
-        return path.replace(" ", "")
+        return path.replace(" ", "%20")
